@@ -6,12 +6,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 
 namespace ReactiveUI.Blazor
@@ -37,6 +36,7 @@ namespace ReactiveUI.Blazor
         public ReactiveComponentBase()
         {
             var propertyChangedObservable = this.WhenAnyValue(x => x.ViewModel)
+                .Where(x => x != null)
                 .Select(x => Observable.FromEvent<PropertyChangedEventHandler, Unit>(
                     eventHandler =>
                     {
@@ -48,7 +48,10 @@ namespace ReactiveUI.Blazor
                     eh => x.PropertyChanged -= eh))
                 .Switch();
 
-            propertyChangedObservable.Do(_ => StateHasChanged()).Subscribe();
+            propertyChangedObservable.ObserveOn(RxApp.MainThreadScheduler).Do(_ =>
+            {
+                Invoke(StateHasChanged);
+            }).Subscribe();
         }
 
         /// <inheritdoc />
